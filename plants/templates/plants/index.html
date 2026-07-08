@@ -3,85 +3,148 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FloraCare | Akıllı Bitki Takip Sistemi</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <title>FloraCare Asistanı</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <style>
-        .plant-card {
-            transition: transform 0.2s;
-        }
-        .plant-card:hover {
-            transform: translateY(-5px);
-        }
+        body { background-color: #f8f9fa; }
+        .bg-success-custom { background-color: #198754; }
+        .card { border-radius: 12px; border: none; }
+        .plant-img { height: 180px; object-fit: cover; border-top-left-radius: 12px; border-top-right-radius: 12px; }
     </style>
 </head>
-<body class="bg-light">
+<body>
 
-    <nav class="navbar navbar-dark bg-success mb-4 shadow-sm">
-        <div class="container">
-            <a class="navbar-brand fw-bold" href="#">🌿 FloraCare Asistanı</a>
-        </div>
-    </nav>
-
+<!-- Navbar -->
+<nav class="navbar navbar-dark bg-success-custom mb-4 shadow-sm">
     <div class="container">
-        <div class="row">
-            <div class="col-md-4 mb-4">
-                <div class="card shadow-sm p-4 border-0">
-                    <h4 class="fw-bold text-success mb-3">Yeni Bitki Ekle</h4>
-                    <form method="POST">
-                        {% csrf_token %}
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">Bitki Adı</label>
-                            <input type="text" name="name" class="form-control" required placeholder="Örn: Aloe Vera">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">Toprak Türü</label>
-                            <input type="text" name="soil_type" class="form-control" required placeholder="Örn: Torflu Kaktüs Toprağı">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">Sulama Sıklığı (Kaç Günde Bir?)</label>
-                            <input type="number" name="interval" class="form-control" min="1" required placeholder="Örn: 3">
-                        </div>
-                        <button type="submit" class="btn btn-success w-100 fw-bold py-2">Sisteme Kaydet</button>
-                    </form>
+        <span class="navbar-brand mb-0 h1">🌿 FloraCare Asistanı</span>
+    </div>
+</nav>
+
+<div class="container">
+    <!-- Karşılama Paneli -->
+    <div class="d-flex justify-content-between align-items-center mb-4 p-3 bg-white rounded shadow-sm">
+        <span class="text-secondary">Hoş geldin, <strong class="text-success">{{ request.user.username }}</strong>! 🌿</span>
+        <a href="{% url 'logout' %}" class="btn btn-outline-danger btn-sm">Güvenli Çıkış</a>
+    </div>
+
+    <!-- === KEŞFET / KATALOG ALANI === -->
+    <h3 class="fw-bold text-success mb-3">🌿 Bitki Keşfet & Öğren</h3>
+    <p class="text-muted mb-4">Yeni bitkiler hakkında bilgi edinin ve doğrudan bakım listenize ekleyin.</p>
+    
+    <div class="row mb-5">
+        {% for cat_plant in catalog_plants %}
+        <div class="col-md-3 mb-4">
+            <div class="card shadow-sm h-100">
+                {% if cat_plant.image_url %}
+                    <img src="{{ cat_plant.image_url }}" class="card-img-top plant-img" alt="{{ cat_plant.name }}">
+                {% else %}
+                    <img src="https://images.unsplash.com/photo-1545241047-6083a3684587?w=500" class="card-img-top plant-img" alt="Varsayılan Bitki">
+                {% endif %}
+                <div class="card-body d-flex flex-column">
+                    <h5 class="card-title fw-bold text-dark">{{ cat_plant.name }}</h5>
+                    <p class="card-text text-muted small mb-3">{{ cat_plant.description|truncatechars:60 }}</p>
+                    
+                    <!-- Detay Gör Butonu (Modal'ı tetikler) -->
+                    <button class="btn btn-success w-100 mt-auto" data-bs-toggle="modal" data-bs-target="#plantModal{{ cat_plant.id }}">
+                        Detayları Gör
+                    </button>
                 </div>
             </div>
+        </div>
 
-            <div class="col-md-8">
-                <div class="card shadow-sm p-4 border-0">
-                    <h4 class="fw-bold text-dark mb-4">Benim Bitkilerim</h4>
-                    <div class="row">
-                        {% for plant in plants %}
-                        <div class="col-md-6 mb-3">
-                            <div class="card h-100 plant-card shadow-sm border-0 border-start border-4 {% if plant.needs_watering %}border-danger{% else %}border-success{% endif %}">
-                                <div class="card-body d-flex flex-column justify-content-between">
-                                    <div>
-                                        <h5 class="card-title fw-bold text-dark">{{ plant.name }}</h5>
-                                        <p class="card-text text-muted mb-1"><strong>Toprak:</strong> {{ plant.soil_type }}</p>
-                                        <p class="card-text text-muted mb-3"><strong>Sıklık:</strong> {{ plant.watering_interval_days }} günde bir</p>
-                                    </div>
-                                    
-                                    {% if plant.needs_watering %}
-                                        <div class="alert alert-danger p-2 mb-0 fw-bold text-center">
-                                            🚨 Sulama Vakti Geldi!
-                                        </div>
-                                    {% else %}
-                                        <div class="alert alert-success p-2 mb-0 text-center fw-semibold">
-                                            😊 Bitki Sağlıklı / Sulanmış
-                                        </div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
-                        {% empty %}
-                        <div class="col-12 text-center py-4">
-                            <p class="text-muted fs-5">Henüz eklenmiş bir bitki yok. Soldaki formdan ilk bitkini ekleyerek başlayabilirsin!</p>
-                        </div>
-                        {% endfor %}
+        <!-- Her Bitki İçin Bilgi Penceresi (Modal Pop-up) -->
+        <div class="modal fade" id="plantModal{{ cat_plant.id }}" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content" style="border-radius: 15px;">
+                    <div class="modal-header border-0">
+                        <h5 class="modal-title fw-bold text-success">🌿 {{ cat_plant.name }} Hakkında</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        {% if cat_plant.image_url %}
+                            <img src="{{ cat_plant.image_url }}" class="img-fluid rounded mb-3 w-100" style="max-height: 250px; object-fit: cover;">
+                        {% endif %}
+                        <p><strong>🌱 İdeal Toprak Türü:</strong> {{ cat_plant.soil_type }}</p>
+                        <p><strong>💧 Sulama Sıklığı:</strong> {{ cat_plant.watering_interval_days }} Günde Bir</p>
+                        <hr>
+                        <p class="text-secondary"><strong>📜 Bakım Tüyoları:</strong><br>{{ cat_plant.description }}</p>
+                    </div>
+                    <div class="modal-footer border-0">
+                        <!-- Doğrudan Listeye Ekleme Formu -->
+                        <form method="POST" class="w-100">
+                            {% csrf_token %}
+                            <input type="hidden" name="catalog_add" value="true">
+                            <input type="hidden" name="catalog_plant_id" value="{{ cat_plant.id }}">
+                            <button type="submit" class="btn btn-success w-100 py-2">Bitkilerime Ekle & Takip Başlat</button>
+                        </form>
                     </div>
                 </div>
             </div>
         </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="alert alert-info text-center">Henüz katalog bitkisi eklenmemiş. Önce admin panelinden eklemelisin!</div>
+        </div>
+        {% endfor %}
     </div>
+
+    <!-- Alt Kısım: Manuel Form ve Benim Bitkilerim Listesi -->
+    <div class="row">
+        <!-- Manuel Ekleme -->
+        <div class="col-md-4 mb-4">
+            <div class="card shadow-sm p-4">
+                <h4 class="fw-bold text-success mb-3">Yeni Bitki Ekle (Manuel)</h4>
+                <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="manual_add" value="true">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Bitki Adı</label>
+                        <input type="text" name="name" class="form-control" required placeholder="Örn: Aloe Vera">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Toprak Türü</label>
+                        <input type="text" name="soil_type" class="form-control" required placeholder="Örn: Torflu Kaktüs Toprağı">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Sulama Sıklığı (Kaç Günde Bir?)</label>
+                        <input type="number" name="interval" class="form-control" required placeholder="Örn: 3">
+                    </div>
+                    <button type="submit" class="btn btn-success w-100">Sisteme Kaydet</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Benim Bitkilerim Listesi -->
+        <div class="col-md-8 mb-4">
+            <div class="card shadow-sm p-4">
+                <h4 class="fw-bold text-dark mb-4">Benim Bitkilerim</h4>
+                <div class="row">
+                    {% for plant in plants %}
+                    <div class="col-md-6 mb-3">
+                        <div class="p-3 border rounded bg-light">
+                            <h5 class="fw-bold text-success">{{ plant.name }}</h5>
+                            <p class="mb-1 text-muted small"><strong>Toprak:</strong> {{ plant.soil_type }}</p>
+                            <p class="mb-2 text-muted small"><strong>Sulama:</strong> {{ plant.watering_interval_days }} Günde Bir</p>
+                            
+                            {% if plant.needs_watering %}
+                                <span class="badge bg-danger">💧 Sulama Zamanı Geldi!</span>
+                            {% else %}
+                                <span class="badge bg-success">✅ Bitki Güvende</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="col-12 text-center py-4">
+                        <p class="text-muted mb-0">Henüz takip edilen bitki yok. Yukarıdaki katalogdan seçebilir veya soldan ekleyebilirsin!</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 </body>
 </html>
