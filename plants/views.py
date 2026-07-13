@@ -1,8 +1,9 @@
-from django.shortcuts import render, redirect
-from .models import Plant, CatalogPlant  # CatalogPlant'i buraya ekledik
+from django.shortcuts import render, redirect, get_object_or_404
+from .models import Plant, CatalogPlant
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
 
 @login_required(login_url='login')
 def index(request):
@@ -12,7 +13,7 @@ def index(request):
             name = request.POST.get('name')
             soil_type = request.POST.get('soil_type')
             interval = request.POST.get('interval')
-            
+
             Plant.objects.create(
                 user=request.user,
                 name=name,
@@ -20,12 +21,12 @@ def index(request):
                 watering_interval_days=interval
             )
             return redirect('index')
-            
+
         # 2. Durum: Kullanıcı katalogdan "Bitkilerime Ekle" butonuna basarsa
         elif 'catalog_add' in request.POST:
             catalog_id = request.POST.get('catalog_plant_id')
             catalog_plant = CatalogPlant.objects.get(id=catalog_id)
-            
+
             # Katalogdaki hazır bilgileri kullanıcının kendi Plant listesine kopyalıyoruz
             Plant.objects.create(
                 user=request.user,
@@ -34,11 +35,11 @@ def index(request):
                 watering_interval_days=catalog_plant.watering_interval_days
             )
             return redirect('index')
-        
+
     # Veritabanından verileri çekip HTML'e gönderiyoruz
     plants = Plant.objects.filter(user=request.user)
-    catalog_plants = CatalogPlant.objects.all()  # Katalogdaki tüm bitkileri çekiyoruz
-    
+    catalog_plants = CatalogPlant.objects.all() # Katalogdaki tüm bitkileri çekiyoruz
+
     context = {
         'plants': plants,
         'catalog_plants': catalog_plants
@@ -72,3 +73,12 @@ def logout_view(request):
     if request.method == 'POST' or request.method == 'GET':
         logout(request)
         return redirect('login')
+
+# === HIZLI STOK / SATIŞ FONKSİYONU ===
+@require_POST
+def sell_plant(request, plant_id):
+    plant = get_object_or_404(CatalogPlant, id=plant_id)
+    if plant.stock > 0:
+        plant.stock -= 1
+        plant.save()
+    return redirect(request.META.get('HTTP_REFERER', '/'))

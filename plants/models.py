@@ -26,6 +26,11 @@ class CatalogPlant(models.Model):
     watering_interval_days = models.IntegerField(verbose_name="Varsayılan Sulama Sıklığı (Gün)")
     image_url = models.URLField(max_length=500, verbose_name="Bitki Resim URL'i", blank=True, null=True)
     description = models.TextField(verbose_name="Bitki Hakkında Bilgi / Bakım Tüyoları", blank=True, null=True)
+    price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, verbose_name="Satış Fiyatı")
+    stock = models.IntegerField(default=0, verbose_name="Stok Adedi")
+    min_stock_alert = models.IntegerField(default=5, verbose_name="Minimum Stok Uyarı Sınırı")
+
+
 
     def __str__(self):
         return self.name
